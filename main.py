@@ -182,9 +182,12 @@ def auto_login_and_input(current_hour):
         time.sleep(DELAY_UPDATE_INPUT)
         print("Đã nhập máy 8.")
 
-        time.sleep(DELAY_EACH_STEP)
+        luu_btn = driver.find_element(By.XPATH, "//button[.='Lưu']")
+        luu_btn.click()
         
         print("Hoàn thành tác vụ.")
+
+        time.sleep(DELAY_EACH_STEP)
         
         # Đóng trình duyệt
         driver.quit()
