@@ -25,7 +25,11 @@ def get_current_date(format="%Y%m%d"):
 # Hàm để đăng nhập và thực hiện nhập thông tin
 def auto_login_and_input(current_hour):
     try:
-        processing_hour = current_hour + 1
+        processing_hour = current_hour
+
+        if processing_hour == 0:
+            processing_hour = 24
+
         current_date = get_current_date()
         xlsx_file = f"{current_date}.xlsx"
 
@@ -64,7 +68,7 @@ def auto_login_and_input(current_hour):
         time.sleep(DELAY_EACH_STEP)  # Tùy chỉnh thời gian nếu cần
         
         # Tìm và nhập thông tin sau khi đăng nhập
-        input_field = driver.find_element(By.XPATH, f"//tr/td[count(//th[.='Giờ'])+1][.='{processing_hour}']/preceding-sibling::td/button")  # Cập nhật NAME phù hợp
+        input_field = driver.find_element(By.XPATH, f"//tr/td[count(//th[.='Giờ'])+1][.='{processing_hour if processing_hour >= 10 else '0' + str(processing_hour)}']/preceding-sibling::td/button")  # Cập nhật NAME phù hợp
         input_field.click()
         print("Đã chọn giờ cần nhập.")
 
@@ -204,7 +208,7 @@ while True:
         auto_login_and_input(current_hour)
         processed = True
     
-    if current_hour < get_current_hour():
+    if current_hour != get_current_hour():
         print("Đã qua giờ, cập nhật giờ mới.")
         current_hour = get_current_hour()
         processed = False
