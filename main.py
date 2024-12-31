@@ -12,8 +12,9 @@ import openpyxl
 from PyQt5 import QtWidgets, QtCore
 import sys
 
-DELAY_UPDATE_INPUT = 0.5
+DELAY_UPDATE_INPUT = 0.1
 DELAY_EACH_STEP = 15
+TIMEOUT_WAIT = 15
 
 USERNAME = "ad_huyta"
 PASSWORD = "anhhuy123@"
@@ -26,13 +27,17 @@ def get_current_minute():
     now = datetime.datetime.now()
     return now.minute
 
+def get_current_second():
+    now = datetime.datetime.now()
+    return now.second
+
 def get_current_date(format="%Y%m%d"):
     return datetime.datetime.now().strftime(format)
 
 # Hàm để đăng nhập và thực hiện nhập thông tin
-def auto_login_and_input(current_hour, current_minute, xlsx_folder):
+def auto_login_and_input(current_hour, current_minute, xlsx_folder, click_luu_btn):
     try:
-        processing_hour = current_hour + 1
+        processing_hour = current_hour
 
         if processing_hour == 0:
             processing_hour = 24
@@ -54,17 +59,18 @@ def auto_login_and_input(current_hour, current_minute, xlsx_folder):
         if row_data is None:
             return False
         
-        print(f"[{get_current_date(format='%Y-%m-%d')}] Chạy tác vụ {current_hour}_{current_minute}.")
+        app.ex.log(f"Chạy tác vụ {current_hour}_{current_minute}.")
 
         try:
             # Khởi tạo WebDriver (sử dụng Chrome ở đây)
-            driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()))
+            options = webdriver.ChromeOptions()
+            driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), options=options)
 
             # Mở trang web
             driver.get("https://qltb.capnuochaiphong.com.vn/nhat-ky-01")
 
             # Wait for the username field to be present
-            WebDriverWait(driver, 10).until(
+            WebDriverWait(driver, TIMEOUT_WAIT).until(
                 EC.presence_of_element_located((By.ID, "tbTaiKhoan"))
             )
 
@@ -75,142 +81,150 @@ def auto_login_and_input(current_hour, current_minute, xlsx_folder):
             username_field.send_keys(USERNAME)
             password_field.send_keys(PASSWORD)
             password_field.send_keys(Keys.RETURN)  # Nhấn Enter
-            print("Đăng nhập thành công.")
+            app.ex.log("Đăng nhập thành công.")
             
             # Đợi trang tải sau khi đăng nhập
-            time.sleep(DELAY_EACH_STEP)  # Tùy chỉnh thời gian nếu cần
+            WebDriverWait(driver, TIMEOUT_WAIT).until(
+                EC.presence_of_element_located((By.XPATH, "//button[.='Xuất excel']"))
+            )  # Tùy chỉnh thời gian nếu cần
             
             # Tìm và nhập thông tin sau khi đăng nhập
             input_field = driver.find_element(By.XPATH, f"//tr/td[count(//th[.='Giờ'])+1][.='{processing_hour if processing_hour >= 10 else '0' + str(processing_hour)}']/preceding-sibling::td/button")  # Cập nhật NAME phù hợp
             input_field.click()
-            print("Đã chọn giờ cần nhập.")
+            app.ex.log("Đã chọn giờ cần nhập.")
 
-            time.sleep(2)  # Tùy chỉnh thời gian nếu cần
+            # Đợi trang tải sau khi đăng nhập
+            WebDriverWait(driver, TIMEOUT_WAIT).until(
+                EC.presence_of_element_located((By.XPATH, "//button[.='Lưu']"))
+            )  # Tùy chỉnh thời gian nếu cần
 
             dien_ap_mba1_field = driver.find_element(By.XPATH, "//div[label[contains(text(), 'Điện áp MBA1')]]/input")
             dien_ap_mba1_field.clear()
             time.sleep(DELAY_UPDATE_INPUT)
             dien_ap_mba1_field.send_keys(int(row_data[1].value) if row_data[1].value is not None else "")
             time.sleep(DELAY_UPDATE_INPUT)
-            print("Đã nhập điện áp MBA1.")
+            app.ex.log("Đã nhập điện áp MBA1.")
 
             dien_ap_mba2_field = driver.find_element(By.XPATH, "//div[label[contains(text(), 'Điện áp MBA2')]]/input")
             dien_ap_mba2_field.clear()
             time.sleep(DELAY_UPDATE_INPUT)
             dien_ap_mba2_field.send_keys(int(row_data[2].value) if row_data[2].value is not None else "")
             time.sleep(DELAY_UPDATE_INPUT)
-            print("Đã nhập điện áp MBA2.")
+            app.ex.log("Đã nhập điện áp MBA2.")
 
             luu_luong_tuyen_1_field = driver.find_element(By.XPATH, "//div[label[contains(text(), 'Lưu lượng tuyến 1')]]/input")
             luu_luong_tuyen_1_field.clear()
             time.sleep(DELAY_UPDATE_INPUT)
             luu_luong_tuyen_1_field.send_keys(int(row_data[3].value) if row_data[3].value is not None else "")
             time.sleep(DELAY_UPDATE_INPUT)
-            print("Đã nhập lưu lượng tuyến 1.")
+            app.ex.log("Đã nhập lưu lượng tuyến 1.")
 
             luu_luong_tuyen_2_field = driver.find_element(By.XPATH, "//div[label[contains(text(), 'Lưu lượng tuyến 2')]]/input")
             luu_luong_tuyen_2_field.clear()
             time.sleep(DELAY_UPDATE_INPUT)
             luu_luong_tuyen_2_field.send_keys(int(row_data[4].value) if row_data[4].value is not None else "")
             time.sleep(DELAY_UPDATE_INPUT)
-            print("Đã nhập lưu lượng tuyến 2.")
+            app.ex.log("Đã nhập lưu lượng tuyến 2.")
 
             ap_luc_tuyen_1_field = driver.find_element(By.XPATH, "//div[label[contains(text(), 'Áp lực tuyến 1')]]/input")
             ap_luc_tuyen_1_field.clear()
             time.sleep(DELAY_UPDATE_INPUT)
             ap_luc_tuyen_1_field.send_keys(float(row_data[5].value) if row_data[5].value is not None else "")
             time.sleep(DELAY_UPDATE_INPUT)
-            print("Đã nhập lưu lượng tuyến 2.")
+            app.ex.log("Đã nhập lưu lượng tuyến 2.")
 
             ap_luc_tuyen_2_field = driver.find_element(By.XPATH, "//div[label[contains(text(), 'Áp lực tuyến 2')]]/input")
             ap_luc_tuyen_2_field.clear()
             time.sleep(DELAY_UPDATE_INPUT)
             ap_luc_tuyen_2_field.send_keys(float(row_data[6].value) if row_data[6].value is not None else "")
             time.sleep(DELAY_UPDATE_INPUT)
-            print("Đã nhập áp lực tuyến 2.")
+            app.ex.log("Đã nhập áp lực tuyến 2.")
 
             do_dan_dien_field = driver.find_element(By.XPATH, "//div[label[contains(text(), 'Độ dẫn điện')]]/input")
             do_dan_dien_field.clear()
             time.sleep(DELAY_UPDATE_INPUT)
             do_dan_dien_field.send_keys(row_data[7].value if row_data[7].value is not None else "")
             time.sleep(DELAY_UPDATE_INPUT)
-            print("Đã nhập độ dẫn điện.")
+            app.ex.log("Đã nhập độ dẫn điện.")
 
             clo_khu_trung_field = driver.find_element(By.XPATH, "//div[label[contains(text(), 'Clo Khử trùng')]]/input")
             clo_khu_trung_field.clear()
             time.sleep(DELAY_UPDATE_INPUT)
             clo_khu_trung_field.send_keys(float(row_data[8].value) if row_data[8].value is not None else "")
             time.sleep(DELAY_UPDATE_INPUT)
-            print("Đã nhập Clo Khử trùng.")
+            app.ex.log("Đã nhập Clo Khử trùng.")
 
             may_1_field = driver.find_element(By.XPATH, "//div[label[contains(text(), 'Máy 1')]]/input")
             may_1_field.clear()
             time.sleep(DELAY_UPDATE_INPUT)
             may_1_field.send_keys(int(row_data[9].value) if row_data[9].value is not None else "")
             time.sleep(DELAY_UPDATE_INPUT)
-            print("Đã nhập máy 1.")
+            app.ex.log("Đã nhập máy 1.")
 
             may_2_field = driver.find_element(By.XPATH, "//div[label[contains(text(), 'Máy 2')]]/input")
             may_2_field.clear()
             time.sleep(DELAY_UPDATE_INPUT)
             may_2_field.send_keys(int(row_data[10].value) if row_data[10].value is not None else "")
             time.sleep(DELAY_UPDATE_INPUT)
-            print("Đã nhập máy 2.")
+            app.ex.log("Đã nhập máy 2.")
 
             may_3_field = driver.find_element(By.XPATH, "//div[label[contains(text(), 'Máy 3')]]/input")
             may_3_field.clear()
             time.sleep(DELAY_UPDATE_INPUT)
             may_3_field.send_keys(int(row_data[11].value) if row_data[11].value is not None else "")
             time.sleep(DELAY_UPDATE_INPUT)
-            print("Đã nhập máy 3.")
+            app.ex.log("Đã nhập máy 3.")
 
             may_4_field = driver.find_element(By.XPATH, "//div[label[contains(text(), 'Máy 4')]]/input")
             may_4_field.clear()
             time.sleep(DELAY_UPDATE_INPUT)
             may_4_field.send_keys(int(row_data[12].value) if row_data[12].value is not None else "")
             time.sleep(DELAY_UPDATE_INPUT)
-            print("Đã nhập máy 4.")
+            app.ex.log("Đã nhập máy 4.")
 
             may_5_field = driver.find_element(By.XPATH, "//div[label[contains(text(), 'Máy 5')]]/input")
             may_5_field.clear()
             time.sleep(DELAY_UPDATE_INPUT)
             may_5_field.send_keys(int(row_data[13].value) if row_data[13].value is not None else "")
             time.sleep(DELAY_UPDATE_INPUT)
-            print("Đã nhập máy 5.")
+            app.ex.log("Đã nhập máy 5.")
 
             may_6_field = driver.find_element(By.XPATH, "//div[label[contains(text(), 'Máy 6')]]/input")
             may_6_field.clear()
             time.sleep(DELAY_UPDATE_INPUT)
             may_6_field.send_keys(int(row_data[14].value) if row_data[14].value is not None else "")
             time.sleep(DELAY_UPDATE_INPUT)
-            print("Đã nhập máy 6.")
+            app.ex.log("Đã nhập máy 6.")
 
             may_7_field = driver.find_element(By.XPATH, "//div[label[contains(text(), 'Máy 7')]]/input")
             may_7_field.clear()
             time.sleep(DELAY_UPDATE_INPUT)
             may_7_field.send_keys(int(row_data[15].value) if row_data[15].value is not None else "")
             time.sleep(DELAY_UPDATE_INPUT)
-            print("Đã nhập máy 7.")
+            app.ex.log("Đã nhập máy 7.")
 
             may_8_field = driver.find_element(By.XPATH, "//div[label[contains(text(), 'Máy 8')]]/input")
             may_8_field.clear()
             time.sleep(DELAY_UPDATE_INPUT)
             may_8_field.send_keys(int(row_data[16].value) if row_data[16].value is not None else "")
             time.sleep(DELAY_UPDATE_INPUT)
-            print("Đã nhập máy 8.")
+            app.ex.log("Đã nhập máy 8.")
 
-            # luu_btn = driver.find_element(By.XPATH, "//button[.='Lưu']")
-            # luu_btn.click()
+            if click_luu_btn:
+                luu_btn = driver.find_element(By.XPATH, "//button[.='Lưu']")
+                luu_btn.click()
+                app.ex.log("Đã nhấn nút Lưu.")
             
-            print("Hoàn thành tác vụ.")
+            app.ex.log("Hoàn thành tác vụ.")
             driver.quit()
         except Exception as e:
             driver.quit()
+            app.ex.log(f'Có lỗi xảy ra: {e}')
             raise e
 
         return True
     except Exception as e:
-        print('Có lỗi xảy ra:', e)
+        app.ex.log(f'Có lỗi xảy ra: {e}')
         return False
 
 class AutoQLTBApp(QtWidgets.QWidget):
@@ -222,18 +236,27 @@ class AutoQLTBApp(QtWidgets.QWidget):
         self.timer = QtCore.QTimer(self)
         self.timer.timeout.connect(self.run_task)
         self.xlsx_folder = ""
+        self.click_luu_btn = False
 
     def initUI(self):
         self.setWindowTitle('Auto QLTB')
-        self.setGeometry(100, 100, 400, 200)
+        self.setFixedSize(600, 400)  # Set fixed size to prevent resizing
         
         self.start_button = QtWidgets.QPushButton('Start', self)
-        self.start_button.setGeometry(150, 80, 100, 30)
+        self.start_button.setGeometry(250, 320, 100, 30)
         self.start_button.clicked.connect(self.toggle_task)
         
         self.select_folder_button = QtWidgets.QPushButton('Select Folder', self)
-        self.select_folder_button.setGeometry(150, 40, 100, 30)
+        self.select_folder_button.setGeometry(250, 40, 100, 30)
         self.select_folder_button.clicked.connect(self.select_folder)
+        
+        self.luu_checkbox = QtWidgets.QCheckBox('Click Lưu button', self)
+        self.luu_checkbox.setGeometry(250, 80, 150, 30)
+        self.luu_checkbox.stateChanged.connect(self.update_luu_checkbox)
+        
+        self.log_area = QtWidgets.QTextEdit(self)
+        self.log_area.setGeometry(50, 120, 500, 180)
+        self.log_area.setReadOnly(True)
         
         self.show()
 
@@ -241,7 +264,10 @@ class AutoQLTBApp(QtWidgets.QWidget):
         folder = QtWidgets.QFileDialog.getExistingDirectory(self, "Select Folder")
         if folder:
             self.xlsx_folder = folder
-            print(f"Selected folder: {self.xlsx_folder}")
+            self.log(f"Selected folder: {self.xlsx_folder}")
+
+    def update_luu_checkbox(self, state):
+        self.click_luu_btn = state == QtCore.Qt.Checked
 
     def toggle_task(self):
         if self.timer.isActive():
@@ -252,19 +278,24 @@ class AutoQLTBApp(QtWidgets.QWidget):
             self.start_button.setText('Stop')
 
     def run_task(self):
-        print(".")
+        self.log(f"[{get_current_date()} {get_current_hour()}:{get_current_minute()}:{get_current_second()}] ...")
         if not self.processed:
             current_minute = get_current_minute()
-            result = auto_login_and_input(self.current_hour, current_minute, self.xlsx_folder)
+            result = auto_login_and_input(self.current_hour, current_minute, self.xlsx_folder, self.click_luu_btn)
             if result:
                 self.processed = True
         
         if self.current_hour != get_current_hour():
-            print("Đã qua giờ, cập nhật giờ mới.")
+            self.log("Đã qua giờ, cập nhật giờ mới.")
             self.current_hour = get_current_hour()
             self.processed = False
+
+    def log(self, message):
+        self.log_area.append(message)
+        print(message)
 
 if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)
     ex = AutoQLTBApp()
+    app.ex = ex
     sys.exit(app.exec_())
