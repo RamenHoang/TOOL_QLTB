@@ -49,30 +49,41 @@ class AutoQLTBApp(QtWidgets.QWidget):
 
     def initUI(self):
         self.setWindowTitle('Auto QLTB')
-        self.setFixedSize(600, 500)  # Set fixed size to prevent resizing
+        self.setFixedSize(600, 550)  # Set fixed size to prevent resizing
         
         self.start_button = QtWidgets.QPushButton('Chạy', self)
-        self.start_button.setGeometry(250, 460, 100, 30)
+        self.start_button.setGeometry(250, 510, 100, 30)
         self.start_button.clicked.connect(self.toggle_task)
         
         self.select_folder_button = QtWidgets.QPushButton('Chọn thư mục chứa file excel', self)
         self.select_folder_button.setGeometry(200, 40, 200, 30)
         self.select_folder_button.clicked.connect(self.select_folder)
         
+        self.username_label = QtWidgets.QLabel('Username:', self)
+        self.username_label.setGeometry(150, 80, 100, 30)  # Centered horizontally
+        self.username_input = QtWidgets.QLineEdit(self)
+        self.username_input.setGeometry(250, 80, 200, 30)  # Centered horizontally
+        
+        self.password_label = QtWidgets.QLabel('Password:', self)
+        self.password_label.setGeometry(150, 120, 100, 30)  # Centered horizontally
+        self.password_input = QtWidgets.QLineEdit(self)
+        self.password_input.setGeometry(250, 120, 200, 30)  # Centered horizontally
+        self.password_input.setEchoMode(QtWidgets.QLineEdit.Password)
+        
         self.luu_checkbox = QtWidgets.QCheckBox('Lưu thông số', self)
-        self.luu_checkbox.setGeometry(250, 80, 150, 30)
+        self.luu_checkbox.setGeometry(250, 160, 150, 30)
         self.luu_checkbox.stateChanged.connect(self.update_luu_checkbox)
         
         self.browser_checkbox = QtWidgets.QCheckBox('Mở trình duyệt', self)
-        self.browser_checkbox.setGeometry(250, 110, 150, 30)
+        self.browser_checkbox.setGeometry(250, 190, 150, 30)
         self.browser_checkbox.stateChanged.connect(self.update_browser_checkbox)
         
         self.test_checkbox = QtWidgets.QCheckBox('Test', self)
-        self.test_checkbox.setGeometry(250, 140, 150, 30)
+        self.test_checkbox.setGeometry(250, 220, 150, 30)
         self.test_checkbox.stateChanged.connect(self.update_test_checkbox)
         
         self.log_area = QtWidgets.QTextEdit(self)
-        self.log_area.setGeometry(50, 180, 500, 250)
+        self.log_area.setGeometry(50, 260, 500, 230)
         self.log_area.setReadOnly(True)
         
         self.show()
@@ -94,6 +105,11 @@ class AutoQLTBApp(QtWidgets.QWidget):
 
     def toggle_task(self):
         if self.timer.isActive():
+            if self.username_input.text() == "" or self.password_input.text() == "":
+                QtWidgets.QMessageBox.warning(self, "Thiếu thông tin", "Vui lòng nhập username và password.")
+                self.username_input.setFocus()
+                return
+
             self.timer.stop()
             self.start_button.setText('Chạy')
         else:
@@ -166,8 +182,8 @@ class AutoQLTBApp(QtWidgets.QWidget):
                 username_field = driver.find_element(By.ID, "tbTaiKhoan")  # Cập nhật NAME phù hợp
                 password_field = driver.find_element(By.ID, "tbMatKhau")  # Cập nhật NAME phù hợp
                 
-                username_field.send_keys(USERNAME)
-                password_field.send_keys(PASSWORD)
+                username_field.send_keys(self.username_input.text())
+                password_field.send_keys(self.password_input.text())
                 password_field.send_keys(Keys.RETURN)  # Nhấn Enter
                 self.log("Đăng nhập thành công.")
                 
