@@ -38,6 +38,7 @@ class AutoQLTBApp(QtWidgets.QWidget):
     def __init__(self):
         super().__init__()
         self.initUI()
+        self.load_credentials()
         self.processed = False
         self.current_hour = get_current_hour()
         self.timer = QtCore.QTimer(self)
@@ -49,10 +50,10 @@ class AutoQLTBApp(QtWidgets.QWidget):
 
     def initUI(self):
         self.setWindowTitle('Auto QLTB')
-        self.setFixedSize(600, 550)  # Set fixed size to prevent resizing
+        self.setFixedSize(600, 600)  # Set fixed size to prevent resizing
         
         self.start_button = QtWidgets.QPushButton('Chạy', self)
-        self.start_button.setGeometry(250, 510, 100, 30)
+        self.start_button.setGeometry(250, 560, 100, 30)
         self.start_button.clicked.connect(self.toggle_task)
         
         self.select_folder_button = QtWidgets.QPushButton('Chọn thư mục chứa file excel', self)
@@ -70,23 +71,35 @@ class AutoQLTBApp(QtWidgets.QWidget):
         self.password_input.setGeometry(250, 120, 200, 30)  # Centered horizontally
         self.password_input.setEchoMode(QtWidgets.QLineEdit.Password)
         
+        self.save_button = QtWidgets.QPushButton('Lưu thông tin đăng nhập', self)
+        self.save_button.setGeometry(200, 160, 200, 30)
+        self.save_button.clicked.connect(self.save_credentials)
+        
         self.luu_checkbox = QtWidgets.QCheckBox('Lưu thông số', self)
-        self.luu_checkbox.setGeometry(250, 160, 150, 30)
+        self.luu_checkbox.setGeometry(250, 200, 150, 30)
         self.luu_checkbox.stateChanged.connect(self.update_luu_checkbox)
         
         self.browser_checkbox = QtWidgets.QCheckBox('Mở trình duyệt', self)
-        self.browser_checkbox.setGeometry(250, 190, 150, 30)
+        self.browser_checkbox.setGeometry(250, 230, 150, 30)
         self.browser_checkbox.stateChanged.connect(self.update_browser_checkbox)
         
         self.test_checkbox = QtWidgets.QCheckBox('Test', self)
-        self.test_checkbox.setGeometry(250, 220, 150, 30)
+        self.test_checkbox.setGeometry(250, 260, 150, 30)
         self.test_checkbox.stateChanged.connect(self.update_test_checkbox)
         
         self.log_area = QtWidgets.QTextEdit(self)
-        self.log_area.setGeometry(50, 260, 500, 230)
+        self.log_area.setGeometry(50, 300, 500, 250)
         self.log_area.setReadOnly(True)
         
         self.show()
+
+    def load_credentials(self):
+        if os.path.exists("credentials.txt"):
+            with open("credentials.txt", "r") as file:
+                lines = file.readlines()
+                if len(lines) >= 2:
+                    self.username_input.setText(lines[0].strip())
+                    self.password_input.setText(lines[1].strip())
 
     def select_folder(self):
         folder = QtWidgets.QFileDialog.getExistingDirectory(self, 'Chọn thư mục chứa file excel')
@@ -134,6 +147,16 @@ class AutoQLTBApp(QtWidgets.QWidget):
         self.log_area.ensureCursorVisible()
         QtWidgets.QApplication.processEvents()  # Ensure the log is updated in real-time
         print(message)
+
+    def save_credentials(self):
+        username = self.username_input.text()
+        password = self.password_input.text()
+        if username and password:
+            with open("credentials.txt", "w") as file:
+                file.write(f"{username}\n{password}")
+            QtWidgets.QMessageBox.information(self, "Thông tin", "Lưu thông tin đăng nhập thành công.")
+        else:
+            QtWidgets.QMessageBox.warning(self, "Thiếu thông tin", "Vui lòng nhập username và password.")
 
     def auto_login_and_input(self, current_hour, current_minute, xlsx_folder, click_luu_btn):
         try:
