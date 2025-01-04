@@ -105,14 +105,14 @@ class AutoQLTBApp(QtWidgets.QWidget):
 
     def toggle_task(self):
         if self.timer.isActive():
+            self.timer.stop()
+            self.start_button.setText('Chạy')
+        else:
             if self.username_input.text() == "" or self.password_input.text() == "":
                 QtWidgets.QMessageBox.warning(self, "Thiếu thông tin", "Vui lòng nhập username và password.")
                 self.username_input.setFocus()
                 return
 
-            self.timer.stop()
-            self.start_button.setText('Chạy')
-        else:
             self.timer.start(1000)  # Run every 1 second
             self.start_button.setText('Dừng')
 
