@@ -12,7 +12,7 @@ import openpyxl
 from PyQt5 import QtWidgets, QtCore
 import sys
 
-DELAY_UPDATE_INPUT = 0.1
+DELAY_UPDATE_INPUT = 0.5
 DELAY_EACH_STEP = 30
 TIMEOUT_WAIT = 15
 
@@ -317,6 +317,7 @@ class AutoQLTBApp(QtWidgets.QWidget):
 
                 if click_luu_btn:
                     luu_btn = driver.find_element(By.XPATH, "//button[.='Lưu']")
+                    time.sleep(DELAY_UPDATE_INPUT)
                     luu_btn.click()
                     self.log("Đã nhấn nút Lưu.")
                 
